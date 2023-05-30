@@ -26,13 +26,53 @@ async function run() {
     await client.connect();
 
     const menuCollection = client.db("bistroDb").collection("menu");
+    const usersCollection = client.db("bistroDb").collection("users");
     const reviewsCollection = client.db("bistroDb").collection("reviews");
     const cartCollection = client.db("bistroDb").collection("carts");
 
+    // users related apis
+    app.get('/users', async(req, res)=> {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.post('/users', async(req, res)=> {
+      const user = req.body;
+      const query = {email: user.email};
+      console.log(query)
+      const existingUser = await usersCollection.findOne(query);
+      console.log("existing user",existingUser)
+      if (existingUser) {
+        return res.send({message: "user already exist"})
+      }
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+    app.patch('/users/admin/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updateDoc = {
+        $set: {
+          role: "Admin"
+        }
+      }
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+    app.delete('/users/:id', async(req, res)=> {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await usersCollection.deleteOne(filter);
+      res.send(result);
+    })
+
+    // menu related apis
     app.get("/menu", async (req, res) => {
       const result = await menuCollection.find().toArray();
       res.send(result);
     });
+
+    // reviews related apis
     app.get("/reviews", async (req, res) => {
       const result = await reviewsCollection.find().toArray();
       res.send(result);
